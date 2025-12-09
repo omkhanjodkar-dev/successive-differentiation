@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Nth Derivative Calculator</title>
+    <!-- Math.js for symbolic math -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: transparent; /* Transparent for embedding */
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px; /* Reduced padding */
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 100%; /* Full width of the iframe/tab */
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 8px; /* Slightly smaller radius */
+            border: 1px solid var(--border-color); /* Add border for definition */
+            box-shadow: none; /* Remove heavy shadow for flat embedding */
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        h2 { /* Changed from H1 */
+            text-align: center;
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.5rem; /* Smaller font */
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        input {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #outputSection {
+            background-color: #f9fafb;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 100px;
+            overflow-x: auto;
+        }
+
+        .result-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: bold;
+            color: var(--text-muted);
+            margin-right: 0.5rem;
+        }
+
+        .final-answer {
+            background-color: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-weight: bold;
+            word-break: break-word;
+        }
+
+        #graphContainer {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            .controls {
+                grid-template-columns: 2fr 1fr auto;
+                align-items: end;
+            }
+            
+            button {
+                height: 46px; /* Align with inputs */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Nth Derivative Simulator</h2>
+    
+    <div class="controls">
+        <div class="input-group">
+            <label for="equationInput">Function f(x)</label>
+            <input type="text" id="equationInput" placeholder="e.g. 2*x^3 + sin(x)" value="2*x^3 + 4*x">
+        </div>
+
+        <div class="input-group">
+            <label for="orderInput">Order (n)</label>
+            <input type="number" id="orderInput" placeholder="1" value="1" min="1">
+        </div>
+
+        <button id="calcBtn" onclick="calculate()">
+            <span id="btnText">Calculate</span>
+            <div id="btnSpinner" class="spinner"></div>
+        </button>
+
+        <button id="stopBtn" onclick="stopCalculation()" style="display:none; background-color: #ef4444;">
+            Stop
+        </button>
+    </div>
+
+    <div id="outputSection">
+        <div id="statusMessage" style="text-align:center; color: var(--text-muted); padding-bottom: 1rem;">Results will appear here...</div>
+        <div id="stepsContainer"></div>
+    </div>
+
+
+</div>
+
+<script>
+    // 1. Worker Setup for Efficiency
+    // We create a Blob for the worker to keep everything in one file while preventing UI freezing.
+    const workerCode = `
+        importScripts('https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js');
+
+        self.onmessage = function(e) {
+            const { equation, order } = e.data;
+            try {
+                let currentExpr = equation;
+
+                // Validate
+                math.parse(currentExpr);
+
+                for (let i = 1; i <= order; i++) {
+                    self.postMessage({ type: 'progress', current: i, total: order }); // Report progress BEFORE calculation
+                    const derivative = math.derivative(currentExpr, 'x');
+                    const simplified = math.simplify(derivative);
+                    currentExpr = simplified.toString();
+                    
+                    // Stream result immediately AFTER calculation
+                    self.postMessage({ type: 'step', n: i, expr: currentExpr, total: order });
+                }
+
+                self.postMessage({ type: 'complete', final: currentExpr });
+            } catch (error) {
+                self.postMessage({ type: 'error', error: error.message });
+            }
+        };
+    `;
+
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
+    let worker = null;
+
+    // 2. Main Calculation Functions
+    function calculate() {
+        const equation = document.getElementById('equationInput').value;
+        const order = parseInt(document.getElementById('orderInput').value);
+        const statusMessageDiv = document.getElementById('statusMessage');
+        const stepsContainerDiv = document.getElementById('stepsContainer');
+        const calcBtn = document.getElementById('calcBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+
+        if (!equation || !order) {
+            alert('Please enter both a valid equation and order.');
+            return;
+        }
+
+        // Reset UI State for new calculation
+        calcBtn.disabled = true;
+        btnText.style.display = 'none';
+        btnSpinner.style.display = 'block';
+        stopBtn.style.display = 'block';
+        statusMessageDiv.innerHTML = '<p style="text-align:center; color: var(--text-muted)">Starting calculation...</p>';
+        stepsContainerDiv.innerHTML = ''; // Clear previous steps
+
+        // Terminate old worker if running
+        if (worker) worker.terminate();
+        worker = new Worker(workerUrl);
+
+        // Send to Worker
+        worker.postMessage({ equation, order });
+
+        worker.onmessage = function(e) {
+            if (e.data.type === 'progress') {
+                statusMessageDiv.innerHTML = `<p style="text-align:center; color: var(--text-muted)">Calculating Order ${e.data.current} of ${e.data.total}...</p>`;
+            } else if (e.data.type === 'step') {
+                // Append step to stepsContainer
+                const stepHtml = `
+                    <div class="result-item">
+                        <span class="result-label">Order ${e.data.n}:</span>
+                        ${e.data.expr}
+                    </div>
+                `;
+                stepsContainerDiv.insertAdjacentHTML('beforeend', stepHtml);
+                // Optional: Auto-scroll
+                // stepsContainerDiv.scrollTop = stepsContainerDiv.scrollHeight;
+            } else if (e.data.type === 'complete') {
+                // Done
+                resetUIState();
+                statusMessageDiv.innerHTML = ''; // Clear status message
+                const finalHtml = `<div class="final-answer">Final Result: ${e.data.final}</div>`;
+                stepsContainerDiv.insertAdjacentHTML('beforeend', finalHtml);
+
+            } else if (e.data.type === 'error') {
+                resetUIState();
+                statusMessageDiv.innerHTML = ''; // Clear status message
+                stepsContainerDiv.innerHTML = `<p style="color: red; text-align: center;">Error: ${e.data.error}</p>`;
+            }
+        };
+
+        worker.onerror = function(e) {
+            resetUIState();
+            statusMessageDiv.innerHTML = ''; // Clear status message
+            stepsContainerDiv.innerHTML = `<p style="color: red; text-align: center;">Worker Error. The calculation might be too complex or stopped unexpectedly.</p>`;
+        };
+    }
+
+    function stopCalculation() {
+        if (worker) {
+            worker.terminate();
+            worker = null;
+        }
+        resetUIState();
+        const statusMessageDiv = document.getElementById('statusMessage');
+        const stepsContainerDiv = document.getElementById('stepsContainer');
+        statusMessageDiv.innerHTML = ''; // Clear status message
+        stepsContainerDiv.insertAdjacentHTML('beforeend', `<p style="color: #ef4444; font-weight: bold; text-align: center; padding: 1rem;">Calculation Stopped by User</p>`);
+
+    }
+
+    function resetUIState() {
+        const calcBtn = document.getElementById('calcBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const statusMessageDiv = document.getElementById('statusMessage');
+
+        calcBtn.disabled = false;
+        btnText.style.display = 'block';
+        btnSpinner.style.display = 'none';
+        stopBtn.style.display = 'none';
+        // statusMessageDiv is cleared by the complete/error handlers or stopCalculation
+    }
+
+</script>
+
+</body>
+</html>
