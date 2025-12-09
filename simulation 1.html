@@ -8,6 +8,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js"></script>
     <!-- Plotly.js for graphing -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- MathJax Configuration -->
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\(', '\)']],
+        displayMath: [['$$', '$$'], ['\[', '\]']]
+      }
+    };
+    </script>
+    <!-- MathJax for pretty printing equations -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
         :root {
@@ -42,7 +53,7 @@
             gap: 1.5rem;
         }
 
-        h2 { 
+        h2 {
             text-align: center;
             color: var(--primary-color);
             margin: 0;
@@ -206,12 +217,12 @@
         </button>
     </div>
 
-    <div id="graphContainer"></div>
-
     <div id="outputSection">
         <div id="statusMessage" style="text-align:center; color: var(--text-muted); padding-bottom: 1rem;">Results will appear here...</div>
         <div id="stepsContainer"></div>
     </div>
+
+    <div id="graphContainer"></div>
 
 
 </div>
@@ -270,22 +281,44 @@
                     // Math Logic
                     const derivative = math.derivative(currentExpr, 'x');
                     const simplified = math.simplify(derivative);
-                    currentExpr = simplified.toString();
+                    currentExpr = math.format(simplified, { notation: 'fixed' });
+                    
+                    // Convert to LaTeX for pretty printing
+                    // We force 'implicit: hide' to avoid '2 \cdot x'. 
+                    // We also regex replace any remaining dots or tildes to be super clean.
+                    const currentTex = simplified.toTex({ parenthesis: 'keep', implicit: 'hide' })
+                        .replace(/\\\\cdot/g, '')
+                        .replace(/~/g, '')
+                        .replace(/\\\\left\\[/g, '')
+                        .replace(/\\\\right\\]/g, '')
+                        .replace(/\\[/g, '')
+                        .replace(/\\]/g, '');
+
                     
                     // Graphing Logic (Offloaded to Worker)
                     const derivPoints = generatePoints(currentExpr);
 
                     // Stream result immediately AFTER calculation
-                    self.postMessage({ 
+                    self.postMessage({
                         type: 'step', 
                         n: i, 
                         expr: currentExpr, 
+                        tex: currentTex, // Send LaTeX version
                         total: order,
                         points: derivPoints // Send pre-calculated points
                     });
                 }
 
-                self.postMessage({ type: 'complete', final: currentExpr });
+                                                // Final result formatting
+                                                const finalTex = math.parse(currentExpr).toTex({ parenthesis: 'keep', implicit: 'hide' })
+                                                    .replace(/\\\\cdot/g, '')
+                                                    .replace(/~/g, '')
+                                                    .replace(/\\\\left\\[/g, '')
+                                                    .replace(/\\\\right\\]/g, '')
+                                                    .replace(/\\[/g, '')
+                                                    .replace(/\\]/g, '')
+                                                    .replace(/\\{([a-zA-Z0-9])\\}/g, '$1'); // Remove braces around single chars
+                                                self.postMessage({ type: 'complete', final: currentExpr, tex: finalTex });
             } catch (error) {
                 self.postMessage({ type: 'error', error: error.message });
             }
@@ -363,6 +396,7 @@
 
             } else if (e.data.type === 'step') {
                 // Append step to stepsContainer
+                // Keep it simple as a mathematical expression
                 const stepHtml = `
                     <div class="result-item">
                         <span class="result-label">Order ${e.data.n}:</span>
@@ -378,13 +412,8 @@
                         y: e.data.points.y,
                         mode: 'lines',
                         name: `f${"'".repeat(e.data.n)}(x)`, // f'(x), f''(x)
-                        line: { dash: e.data.n === 1 ? 'solid' : 'dot' }, // Different styles
-                        visible: 'legendonly' // OPTIONAL: Hide derivatives by default to avoid clutter? (Currently showing all)
+                        line: { dash: e.data.n === 1 ? 'solid' : 'dot' } // Different styles
                     };
-                    // Actually, let's keep them visible but maybe limit the chaos if there are too many.
-                    // For now, standard behavior:
-                    delete trace.visible; 
-
                     Plotly.addTraces('graphContainer', trace);
                 } catch (err) {
                     console.error("Graphing error for step:", err);
@@ -394,9 +423,15 @@
                 // Done
                 resetUIState();
                 statusMessageDiv.innerHTML = ''; // Clear status message
-                const finalHtml = `<div class="final-answer">Final Result: ${e.data.final}</div>`;
+                // Use $ ... $ for consistency in the final result
+                const finalHtml = `<div class="final-answer">Final Answer: $${e.data.tex}$</div>`;
                 stepsContainerDiv.insertAdjacentHTML('beforeend', finalHtml);
-
+                // Typeset the final math content
+                if (window.MathJax) {
+                    MathJax.typesetPromise([stepsContainerDiv]).catch((err) => console.error("MathJax typesetting error:", err));
+                } else {
+                    console.warn("MathJax not loaded");
+                }
             } else if (e.data.type === 'error') {
                 resetUIState();
                 statusMessageDiv.innerHTML = ''; // Clear status message
