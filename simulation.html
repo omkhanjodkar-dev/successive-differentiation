@@ -6,6 +6,17 @@
     <title>Advanced Nth Derivative Calculator</title>
     <!-- Math.js for symbolic math -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js"></script>
+    <!-- MathJax Configuration -->
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\(', '\)']],
+        displayMath: [['$$', '$$'], ['\[', '\]']]
+      }
+    };
+    </script>
+    <!-- MathJax for pretty printing equations -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
         :root {
@@ -141,14 +152,6 @@
             word-break: break-word;
         }
 
-        #graphContainer {
-            width: 100%;
-            height: 500px;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
         .spinner {
             display: none;
             width: 24px;
@@ -189,11 +192,11 @@
         </div>
 
         <div class="input-group">
-            <label for="order (n)">Order (n)</label>
+            <label for="orderInput">Order (n)</label>
             <input type="number" id="orderInput" placeholder="1" value="1" min="1">
         </div>
 
-        <button id="calcBtn" onclick="calculate()">
+        <button id="calcBtn" onclick="startCalculation()">
             <span id="btnText">Calculate</span>
             <div id="btnSpinner" class="spinner"></div>
         </button>
@@ -207,47 +210,13 @@
         <div id="statusMessage" style="text-align:center; color: var(--text-muted); padding-bottom: 1rem;">Results will appear here...</div>
         <div id="stepsContainer"></div>
     </div>
-
-
 </div>
 
 <script>
-    // 1. Worker Setup for Efficiency
-    // We create a Blob for the worker to keep everything in one file while preventing UI freezing.
-    const workerCode = `
-        importScripts('https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js');
+    let isCalculating = false;
 
-        self.onmessage = function(e) {
-            const { equation, order } = e.data;
-            try {
-                let currentExpr = equation;
-
-                // Validate
-                math.parse(currentExpr);
-
-                for (let i = 1; i <= order; i++) {
-                    self.postMessage({ type: 'progress', current: i, total: order }); // Report progress BEFORE calculation
-                    const derivative = math.derivative(currentExpr, 'x');
-                    const simplified = math.simplify(derivative);
-                    currentExpr = simplified.toString();
-                    
-                    // Stream result immediately AFTER calculation
-                    self.postMessage({ type: 'step', n: i, expr: currentExpr, total: order });
-                }
-
-                self.postMessage({ type: 'complete', final: currentExpr });
-            } catch (error) {
-                self.postMessage({ type: 'error', error: error.message });
-            }
-        };
-    `;
-
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    const workerUrl = URL.createObjectURL(blob);
-    let worker = null;
-
-    // 2. Main Calculation Functions
-    function calculate() {
+    // Async function to allow UI updates
+    async function startCalculation() {
         const equation = document.getElementById('equationInput').value;
         const order = parseInt(document.getElementById('orderInput').value);
         const statusMessageDiv = document.getElementById('statusMessage');
@@ -262,67 +231,92 @@
             return;
         }
 
-        // Reset UI State for new calculation
+        // Reset UI
+        isCalculating = true;
         calcBtn.disabled = true;
         btnText.style.display = 'none';
         btnSpinner.style.display = 'block';
         stopBtn.style.display = 'block';
         statusMessageDiv.innerHTML = '<p style="text-align:center; color: var(--text-muted)">Starting calculation...</p>';
-        stepsContainerDiv.innerHTML = ''; // Clear previous steps
+        stepsContainerDiv.innerHTML = '';
 
-        // Terminate old worker if running
-        if (worker) worker.terminate();
-        worker = new Worker(workerUrl);
+        try {
+            // Check if mathjs is loaded
+            if (typeof math === 'undefined') {
+                throw new Error("Math.js library not loaded. Please check your internet connection.");
+            }
 
-        // Send to Worker
-        worker.postMessage({ equation, order });
+            let currentExpr = equation;
+            // Validate input
+            math.parse(currentExpr);
 
-        worker.onmessage = function(e) {
-            if (e.data.type === 'progress') {
-                statusMessageDiv.innerHTML = `<p style="text-align:center; color: var(--text-muted)">Calculating Order ${e.data.current} of ${e.data.total}...</p>`;
-            } else if (e.data.type === 'step') {
-                // Append step to stepsContainer
+            for (let i = 1; i <= order; i++) {
+                if (!isCalculating) break;
+
+                // Update Progress UI
+                statusMessageDiv.innerHTML = `<p style="text-align:center; color: var(--text-muted)">Calculating Order ${i} of ${order}...</p>`;
+                
+                // Allow UI to render by waiting a tick
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                // Calculation Logic
+                const derivative = math.derivative(currentExpr, 'x');
+                const simplified = math.simplify(derivative);
+                currentExpr = math.format(simplified, { notation: 'fixed' });
+                
+                // LaTeX formatting
+                const currentTex = simplified.toTex({ parenthesis: 'keep', implicit: 'hide' })
+                    .replace(/\\cdot/g, '')
+                    .replace(/~/g, '')
+                    .replace(/\\left\[/g, '')
+                    .replace(/\\right\]/g, '')
+                    .replace(/\\\[/g, '')
+                    .replace(/\\\]/g, '');
+
+                // Display Step
                 const stepHtml = `
                     <div class="result-item">
-                        <span class="result-label">Order ${e.data.n}:</span>
-                        ${e.data.expr}
+                        <span class="result-label">Order ${i}:</span>
+                        ${currentExpr}
                     </div>
                 `;
                 stepsContainerDiv.insertAdjacentHTML('beforeend', stepHtml);
-                // Optional: Auto-scroll
-                // stepsContainerDiv.scrollTop = stepsContainerDiv.scrollHeight;
-            } else if (e.data.type === 'complete') {
-                // Done
-                resetUIState();
-                statusMessageDiv.innerHTML = ''; // Clear status message
-                const finalHtml = `<div class="final-answer">Final Result: ${e.data.final}</div>`;
-                stepsContainerDiv.insertAdjacentHTML('beforeend', finalHtml);
-
-            } else if (e.data.type === 'error') {
-                resetUIState();
-                statusMessageDiv.innerHTML = ''; // Clear status message
-                stepsContainerDiv.innerHTML = `<p style="color: red; text-align: center;">Error: ${e.data.error}</p>`;
             }
-        };
 
-        worker.onerror = function(e) {
+            if (isCalculating) {
+                // Final Answer
+                const finalTex = math.parse(currentExpr).toTex({ parenthesis: 'keep', implicit: 'hide' })
+                    .replace(/\\cdot/g, '')
+                    .replace(/~/g, '')
+                    .replace(/\\left\[/g, '')
+                    .replace(/\\right\]/g, '')
+                    .replace(/\\\[/g, '')
+                    .replace(/\\\]/g, '')
+                    .replace(/\{([a-zA-Z0-9])\}/g, '$1');
+
+                statusMessageDiv.innerHTML = ''; 
+                const finalHtml = `<div class="final-answer">Final Answer: $${finalTex}$</div>`;
+                stepsContainerDiv.insertAdjacentHTML('beforeend', finalHtml);
+                
+                // Typeset
+                if (window.MathJax) {
+                    MathJax.typesetPromise([stepsContainerDiv]).catch(err => console.error(err));
+                }
+            } else {
+                stepsContainerDiv.insertAdjacentHTML('beforeend', `<p style="color: #ef4444; font-weight: bold; text-align: center; padding: 1rem;">Calculation Stopped by User</p>`);
+            }
+
+        } catch (error) {
+            statusMessageDiv.innerHTML = '';
+            stepsContainerDiv.innerHTML = `<p style="color: red; text-align: center;">Error: ${error.message}</p>`;
+            console.error(error);
+        } finally {
             resetUIState();
-            statusMessageDiv.innerHTML = ''; // Clear status message
-            stepsContainerDiv.innerHTML = `<p style="color: red; text-align: center;">Worker Error. The calculation might be too complex or stopped unexpectedly.</p>`;
-        };
+        }
     }
 
     function stopCalculation() {
-        if (worker) {
-            worker.terminate();
-            worker = null;
-        }
-        resetUIState();
-        const statusMessageDiv = document.getElementById('statusMessage');
-        const stepsContainerDiv = document.getElementById('stepsContainer');
-        statusMessageDiv.innerHTML = ''; // Clear status message
-        stepsContainerDiv.insertAdjacentHTML('beforeend', `<p style="color: #ef4444; font-weight: bold; text-align: center; padding: 1rem;">Calculation Stopped by User</p>`);
-
+        isCalculating = false;
     }
 
     function resetUIState() {
@@ -330,15 +324,12 @@
         const stopBtn = document.getElementById('stopBtn');
         const btnText = document.getElementById('btnText');
         const btnSpinner = document.getElementById('btnSpinner');
-        const statusMessageDiv = document.getElementById('statusMessage');
 
         calcBtn.disabled = false;
         btnText.style.display = 'block';
         btnSpinner.style.display = 'none';
         stopBtn.style.display = 'none';
-        // statusMessageDiv is cleared by the complete/error handlers or stopCalculation
     }
-
 </script>
 
 </body>
