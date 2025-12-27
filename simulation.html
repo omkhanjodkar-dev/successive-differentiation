@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Nth Derivative Calculator</title>
+    <title>Advanced Nth Derivative Calculator & Grapher</title>
     <!-- Math.js for symbolic math -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js"></script>
+    <!-- Plotly.js for graphing -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <!-- MathJax Configuration -->
     <script>
     window.MathJax = {
@@ -34,28 +36,27 @@
             background-color: transparent; /* Transparent for embedding */
             color: var(--text-main);
             margin: 0;
-            padding: 10px; /* Reduced padding */
+            padding: 10px; 
             line-height: 1.5;
         }
 
         .container {
-            max-width: 100%; /* Full width of the iframe/tab */
+            max-width: 100%; 
             margin: 0 auto;
             background: var(--card-bg);
-            border-radius: 8px; /* Slightly smaller radius */
-            border: 1px solid var(--border-color); /* Add border for definition */
-            box-shadow: none; /* Remove heavy shadow for flat embedding */
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
-        h2 { /* Changed from H1 */
+        h2 {
             text-align: center;
             color: var(--primary-color);
             margin: 0;
-            font-size: 1.5rem; /* Smaller font */
+            font-size: 1.5rem;
         }
 
         .controls {
@@ -128,7 +129,6 @@
         .result-item {
             padding: 0.75rem 0;
             border-bottom: 1px solid var(--border-color);
-            font-family: 'Courier New', Courier, monospace;
         }
 
         .result-item:last-child {
@@ -152,6 +152,109 @@
             word-break: break-word;
         }
 
+        #graphContainer {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            margin-top: 1.5rem;
+        }
+
+        /* Examples Styling */
+        .examples-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .example-btn {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-btn:hover {
+            background-color: #e5e7eb;
+            border-color: #d1d5db;
+            color: var(--text-main);
+        }
+
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #000;
+        }
+
+        .formula-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .formula-table th, .formula-table td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .help-btn {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.5rem;
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
         .spinner {
             display: none;
             width: 24px;
@@ -167,23 +270,28 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Responsive Design */
         @media (min-width: 768px) {
             .controls {
-                grid-template-columns: 2fr 1fr auto;
+                grid-template-columns: 2fr 1fr 1fr auto;
                 align-items: end;
             }
-            
-            button {
-                height: 46px; /* Align with inputs */
-            }
+            button { height: 46px; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <button class="help-btn" onclick="openModal()">Formulas</button>
     <h2>Nth Derivative Simulator</h2>
+
+    <div class="examples-container">
+        <span style="font-size: 0.85rem; color: var(--text-muted); width: 100%; margin-bottom: -0.25rem;">Quick Examples:</span>
+        <button class="example-btn" onclick="loadExample('x^4 + 3*x^3 + 2', 2, 1)">Polynomial</button>
+        <button class="example-btn" onclick="loadExample('sin(x) * cos(x)', 2)">Trig Product</button>
+        <button class="example-btn" onclick="loadExample('e^x * x^2', 3, 0)">Exponential</button>
+        <button class="example-btn" onclick="loadExample('log(x) / x', 1, 2)">Logarithmic</button>
+    </div>
     
     <div class="controls">
         <div class="input-group">
@@ -194,6 +302,11 @@
         <div class="input-group">
             <label for="orderInput">Order (n)</label>
             <input type="number" id="orderInput" placeholder="1" value="1" min="1">
+        </div>
+
+        <div class="input-group">
+            <label for="evalInput">Evaluate at x (opt)</label>
+            <input type="number" id="evalInput" placeholder="e.g. 5" step="any">
         </div>
 
         <button id="calcBtn" onclick="startCalculation()">
@@ -210,15 +323,103 @@
         <div id="statusMessage" style="text-align:center; color: var(--text-muted); padding-bottom: 1rem;">Results will appear here...</div>
         <div id="stepsContainer"></div>
     </div>
+
+    <div id="graphContainer"></div>
+</div>
+
+<!-- Formula Modal -->
+<div id="formulaModal" class="modal">
+    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h3 style="margin-top:0; color: var(--primary-color);">Formula Reference Sheet</h3>
+        <table class="formula-table">
+            <thead>
+                <tr><th>$f(x)$</th><th>$f'(x)$</th><th>$f(x)$</th><th>$f'(x)$</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>$x^n$</td><td>$n \cdot x^{n-1}$</td><td>$\ln(x)$</td><td>$1/x$</td></tr>
+                <tr><td>$\sin(x)$</td><td>$\cos(x)$</td><td>$\cos(x)$</td><td>$-\sin(x)$</td></tr>
+                <tr><td>$\tan(x)$</td><td>$\sec^2(x)$</td><td>$e^x$</td><td>$e^x$</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    let isCalculating = false;
+    // Worker Logic for non-blocking calculations
+    const workerCode = `
+        importScripts('https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js');
 
-    // Async function to allow UI updates
+        function generatePoints(expr, xMin = -10, xMax = 10, step = 0.1) {
+            const xValues = [], yValues = [];
+            try {
+                const compiled = math.compile(expr);
+                for (let x = xMin; x <= xMax; x += step) {
+                    try {
+                        const y = compiled.evaluate({ x: x });
+                        if (isFinite(y)) { xValues.push(x); yValues.push(y); }
+                    } catch (e) {}
+                }
+            } catch (err) {}
+            return { x: xValues, y: yValues };
+        }
+
+        self.onmessage = function(e) {
+            const { equation, order } = e.data;
+            try {
+                let currentExpr = equation;
+                math.parse(currentExpr);
+
+                const origPoints = generatePoints(currentExpr);
+                self.postMessage({ type: 'init_plot', points: origPoints, expr: currentExpr });
+
+                for (let i = 1; i <= order; i++) {
+                    self.postMessage({ type: 'progress', current: i, total: order });
+                    const derivative = math.derivative(currentExpr, 'x');
+                    const simplified = math.simplify(derivative);
+                    currentExpr = math.format(simplified, { notation: 'fixed' });
+                    
+                    const tex = simplified.toTex({ implicit: 'hide' })
+                        .replace(/\\\\cdot/g, '')
+                        .replace(/~/g, '')
+                        .replace(/\\\\left\\[/g, '')
+                        .replace(/\\\\right\\]/g, '')
+                        .replace(/\\\\\\[/g, '')
+                        .replace(/\\\\\\]/g, '');
+                    const points = generatePoints(currentExpr);
+
+                    self.postMessage({ type: 'step', n: i, tex: tex, points: points, expr: currentExpr });
+                }
+                self.postMessage({ type: 'complete', finalExpr: currentExpr });
+            } catch (err) {
+                self.postMessage({ type: 'error', error: err.message });
+            }
+        };
+    `;
+
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
+    let worker = null;
+
+    function openModal() {
+        document.getElementById('formulaModal').style.display = 'block';
+        if (window.MathJax) MathJax.typesetPromise([document.getElementById('formulaModal')]);
+    }
+    function closeModal() { document.getElementById('formulaModal').style.display = 'none'; }
+    window.onclick = e => { if (e.target == document.getElementById('formulaModal')) closeModal(); }
+
+    function loadExample(eq, order, evalX = "") {
+        document.getElementById('equationInput').value = eq;
+        document.getElementById('orderInput').value = order;
+        document.getElementById('evalInput').value = evalX;
+        document.getElementById('stepsContainer').innerHTML = '';
+        document.getElementById('statusMessage').innerHTML = 'Results will appear here...';
+    }
+
     async function startCalculation() {
         const equation = document.getElementById('equationInput').value;
         const order = parseInt(document.getElementById('orderInput').value);
+        const evalXInput = document.getElementById('evalInput').value;
         const statusMessageDiv = document.getElementById('statusMessage');
         const stepsContainerDiv = document.getElementById('stepsContainer');
         const calcBtn = document.getElementById('calcBtn');
@@ -226,110 +427,81 @@
         const btnText = document.getElementById('btnText');
         const btnSpinner = document.getElementById('btnSpinner');
 
-        if (!equation || !order) {
-            alert('Please enter both a valid equation and order.');
-            return;
+        if (!equation || !order) { alert('Please enter both a valid equation and order.'); return; }
+
+        if (/\d[a-zA-Z]/.test(equation)) {
+            const suggest = equation.replace(/(\d)([a-zA-Z])/g, '$1*$2');
+            if (confirm(`Did you mean "${suggest}"? Use '*' for multiplication.`)) {
+                document.getElementById('equationInput').value = suggest;
+                return;
+            }
         }
 
-        // Reset UI
-        isCalculating = true;
         calcBtn.disabled = true;
         btnText.style.display = 'none';
         btnSpinner.style.display = 'block';
         stopBtn.style.display = 'block';
-        statusMessageDiv.innerHTML = '<p style="text-align:center; color: var(--text-muted)">Starting calculation...</p>';
+        statusMessageDiv.innerHTML = 'Starting calculation...';
         stepsContainerDiv.innerHTML = '';
 
-        try {
-            // Check if mathjs is loaded
-            if (typeof math === 'undefined') {
-                throw new Error("Math.js library not loaded. Please check your internet connection.");
-            }
+        if (worker) worker.terminate();
+        worker = new Worker(workerUrl);
 
-            let currentExpr = equation;
-            // Validate input
-            math.parse(currentExpr);
+        worker.postMessage({ equation, order });
 
-            for (let i = 1; i <= order; i++) {
-                if (!isCalculating) break;
-
-                // Update Progress UI
-                statusMessageDiv.innerHTML = `<p style="text-align:center; color: var(--text-muted)">Calculating Order ${i} of ${order}...</p>`;
+        worker.onmessage = function(e) {
+            const data = e.data;
+            if (data.type === 'progress') {
+                statusMessageDiv.innerHTML = `Calculating Order ${data.current} of ${data.total}...`;
+            } else if (data.type === 'init_plot') {
+                Plotly.newPlot('graphContainer', [{ x: data.points.x, y: data.points.y, mode: 'lines', name: 'f(x)', line: { width: 3 } }], 
+                    { title: 'Function & Derivatives', xaxis: { title: 'x' }, yaxis: { title: 'y' } });
+            } else if (data.type === 'step') {
+                stepsContainerDiv.insertAdjacentHTML('beforeend', `<div class="result-item"><span class="result-label">Order ${data.n}:</span> $${data.tex}$</div>`);
+                if (window.MathJax) MathJax.typesetPromise([stepsContainerDiv]);
                 
-                // Allow UI to render by waiting a tick
-                await new Promise(resolve => setTimeout(resolve, 10));
-
-                // Calculation Logic
-                const derivative = math.derivative(currentExpr, 'x');
-                const simplified = math.simplify(derivative);
-                currentExpr = math.format(simplified, { notation: 'fixed' });
+                const label = data.n <= 3 ? `f${"'".repeat(data.n)}(x)` : `f^(${data.n})(x)`;
                 
-                // LaTeX formatting
-                const currentTex = simplified.toTex({ parenthesis: 'keep', implicit: 'hide' })
+                Plotly.addTraces('graphContainer', { x: data.points.x, y: data.points.y, mode: 'lines', name: label, line: { dash: 'dot' } });
+            } else if (data.type === 'complete') {
+                statusMessageDiv.innerHTML = '';
+                const finalTex = math.parse(data.finalExpr).toTex({ implicit: 'hide' })
                     .replace(/\\cdot/g, '')
                     .replace(/~/g, '')
                     .replace(/\\left\[/g, '')
                     .replace(/\\right\]/g, '')
                     .replace(/\\\[/g, '')
                     .replace(/\\\]/g, '');
-
-                // Display Step
-                const stepHtml = `
-                    <div class="result-item">
-                        <span class="result-label">Order ${i}:</span>
-                        ${currentExpr}
+                stepsContainerDiv.insertAdjacentHTML('beforeend', `
+                    <div class="final-answer" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Final Answer: $${finalTex}$</span>
+                        <button class="example-btn" onclick="copyToClipboard('${data.finalExpr.replace(/'/g, "\\'")}')" style="margin:0; padding: 4px 8px;">Copy</button>
                     </div>
-                `;
-                stepsContainerDiv.insertAdjacentHTML('beforeend', stepHtml);
-            }
-
-            if (isCalculating) {
-                // Final Answer
-                const finalTex = math.parse(currentExpr).toTex({ parenthesis: 'keep', implicit: 'hide' })
-                    .replace(/\\cdot/g, '')
-                    .replace(/~/g, '')
-                    .replace(/\\left\[/g, '')
-                    .replace(/\\right\]/g, '')
-                    .replace(/\\\[/g, '')
-                    .replace(/\\\]/g, '')
-                    .replace(/\{([a-zA-Z0-9])\}/g, '$1');
-
-                statusMessageDiv.innerHTML = ''; 
-                const finalHtml = `<div class="final-answer">Final Answer: $${finalTex}$</div>`;
-                stepsContainerDiv.insertAdjacentHTML('beforeend', finalHtml);
+                `);
                 
-                // Typeset
-                if (window.MathJax) {
-                    MathJax.typesetPromise([stepsContainerDiv]).catch(err => console.error(err));
+                if (evalXInput !== "") {
+                    try {
+                        const val = math.compile(data.finalExpr).evaluate({ x: parseFloat(evalXInput) });
+                        stepsContainerDiv.insertAdjacentHTML('beforeend', `<div class="final-answer" style="background:#ecfdf5;color:#065f46;margin-top:0.5rem;">Value at x=${evalXInput}: <strong>${val.toFixed(6)}</strong></div>`);
+                    } catch (err) {}
                 }
-            } else {
-                stepsContainerDiv.insertAdjacentHTML('beforeend', `<p style="color: #ef4444; font-weight: bold; text-align: center; padding: 1rem;">Calculation Stopped by User</p>`);
+                if (window.MathJax) MathJax.typesetPromise([stepsContainerDiv]);
+                resetUI();
+            } else if (data.type === 'error') {
+                stepsContainerDiv.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+                resetUI();
             }
-
-        } catch (error) {
-            statusMessageDiv.innerHTML = '';
-            stepsContainerDiv.innerHTML = `<p style="color: red; text-align: center;">Error: ${error.message}</p>`;
-            console.error(error);
-        } finally {
-            resetUIState();
-        }
+        };
     }
 
-    function stopCalculation() {
-        isCalculating = false;
+    function stopCalculation() { if (worker) worker.terminate(); resetUI(); }
+    function resetUI() {
+        document.getElementById('calcBtn').disabled = false;
+        document.getElementById('btnText').style.display = 'block';
+        document.getElementById('btnSpinner').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'none';
     }
-
-    function resetUIState() {
-        const calcBtn = document.getElementById('calcBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
-
-        calcBtn.disabled = false;
-        btnText.style.display = 'block';
-        btnSpinner.style.display = 'none';
-        stopBtn.style.display = 'none';
-    }
+    function copyToClipboard(text) { navigator.clipboard.writeText(text).then(() => alert('Copied!')); }
 </script>
 
 </body>

@@ -1,33 +1,39 @@
 # Successive Differentiation Simulator
 
-An advanced web-based tool for calculating the Nth derivative of mathematical functions symbolically.
+An advanced, single-file web application for calculating, visualizing, and exploring the Nth derivative of mathematical functions. Designed for educational use in college laboratories.
 
 ## Features
 
-- **Symbolic Differentiation:** Uses `math.js` to accurately calculate derivatives of complex functions.
-- **Beautiful Mathematical Output:** Integrates `MathJax` to render the final result in high-quality LaTeX format.
-- **Step-by-Step Progress:** Displays intermediate derivatives for every order leading up to the target.
-- **Modern Responsive UI:** A clean, professional interface built with CSS variables and flexbox/grid for all screen sizes.
-- **Asynchronous Processing:** Long-running calculations are handled asynchronously to keep the user interface responsive.
-- **Stop Control:** Allows users to cancel ongoing high-order calculations instantly.
+- **Symbolic Differentiation:** Uses `math.js` to accurately calculate Nth-order derivatives of complex functions.
+- **Real-Time Graphing:** Visualizes the original function ($f(x)$) and its derivatives ($f'(x)$, $f''(x)$, etc.) simultaneously using `Plotly.js`.
+- **LaTeX Rendering:** Displays clean, textbook-quality mathematical equations using `MathJax`.
+- **Numerical Evaluation:** Evaluate the final derivative at a specific point ($x=a$).
+- **Web Worker Engine:** Performs heavy calculations in a background thread, keeping the UI responsive.
+- **Formula Reference:** Built-in modal with standard derivatives and rules (Product, Quotient, Chain).
+- **Single-File Deployment:** Entire application contained in `simulation.html` for easy distribution and offline use.
 
 ## Technologies Used
 
-- **HTML5 & CSS3:** For structure and modern styling.
-- **JavaScript (ES6+):** For calculation logic and UI interaction.
-- **[Math.js](https://mathjs.org/):** An extensive math library for symbolic differentiation and simplification.
-- **[MathJax](https://www.mathjax.org/):** A JavaScript display engine for mathematics that works in all browsers.
+- **HTML5 & CSS3:** Modern, responsive UI.
+- **JavaScript (ES6+):** Core logic and Web Worker implementation.
+- **[Math.js](https://mathjs.org/):** Symbolic differentiation engine.
+- **[Plotly.js](https://plotly.com/javascript/):** Interactive graphing library.
+- **[MathJax](https://www.mathjax.org/):** LaTeX display engine.
 
 ## How to Use
 
-1. Open `simulation.html` in any modern web browser.
-2. Enter your function in the **Function f(x)** field (e.g., `sin(x) * x^2`).
-3. Enter the desired **Order (n)** of the derivative.
-4. Click **Calculate**.
-5. View the intermediate steps in the results section and the formatted final answer at the bottom.
+1. Open `simulation.html` in any modern web browser (Chrome, Edge, Firefox, Safari).
+2. **Input:**
+   - Enter your function in the **Function f(x)** field (e.g., `sin(x) * x^2`).
+   - Enter the desired **Order (n)** (e.g., `3` for the 3rd derivative).
+   - (Optional) Enter a value for **x** to evaluate the result numerically.
+3. **Calculate:** Click the **Calculate** button.
+4. **Analyze:**
+   - View step-by-step symbolic results in the output section.
+   - Interact with the graph to zoom, pan, and inspect values.
+5. **Tools:** Use the **Formulas** button for help or **Quick Examples** to load preset functions.
 
 ## Project Structure
 
-- `simulation.html`: The main application file containing the UI and calculation logic.
-- `simulation 1.html`: An experimental version including graphing capabilities.
-- `README.md`: Project documentation.
+- `simulation.html`: The complete application (UI, styles, logic, and graphing).
+- `README.md`: This documentation.

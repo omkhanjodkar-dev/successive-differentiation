@@ -395,15 +395,19 @@
                 });
 
             } else if (e.data.type === 'step') {
-                // Append step to stepsContainer
-                // Keep it simple as a mathematical expression
+                // Append step to stepsContainer as Math
                 const stepHtml = `
                     <div class="result-item">
                         <span class="result-label">Order ${e.data.n}:</span>
-                        ${e.data.expr}
+                        $${e.data.tex}$
                     </div>
                 `;
                 stepsContainerDiv.insertAdjacentHTML('beforeend', stepHtml);
+                
+                // Typeset the newly added math content
+                if (window.MathJax) {
+                    MathJax.typesetPromise([stepsContainerDiv]).catch((err) => console.error("MathJax typesetting error:", err));
+                }
                 
                 // Add trace to graph using PRE-CALCULATED points
                 try {
