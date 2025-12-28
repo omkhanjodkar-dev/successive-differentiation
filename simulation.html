@@ -331,15 +331,43 @@
 <div id="formulaModal" class="modal">
     <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
         <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h3 style="margin-top:0; color: var(--primary-color);">Formula Reference Sheet</h3>
+        <h3 style="margin-top:0; color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">Formula Reference Sheet</h3>
+        
+        <h4 style="margin-bottom: 0.5rem; color: var(--text-main);">Basic & Exponential</h4>
         <table class="formula-table">
             <thead>
-                <tr><th>$f(x)$</th><th>$f'(x)$</th><th>$f(x)$</th><th>$f'(x)$</th></tr>
+                <tr><th>$f(x)$</th><th>$f'(x)$</th></tr>
             </thead>
             <tbody>
-                <tr><td>$x^n$</td><td>$n \cdot x^{n-1}$</td><td>$\ln(x)$</td><td>$1/x$</td></tr>
-                <tr><td>$\sin(x)$</td><td>$\cos(x)$</td><td>$\cos(x)$</td><td>$-\sin(x)$</td></tr>
-                <tr><td>$\tan(x)$</td><td>$\sec^2(x)$</td><td>$e^x$</td><td>$e^x$</td></tr>
+                <tr><td>$c$ (constant)</td><td>$0$</td></tr>
+                <tr><td>$x^n$</td><td>$n \cdot x^{n-1}$</td></tr>
+                <tr><td>$e^x$</td><td>$e^x$</td></tr>
+                <tr><td>$a^x$</td><td>$a^x \ln(a)$</td></tr>
+                <tr><td>$\ln(x)$</td><td>$\frac{1}{x}$</td></tr>
+            </tbody>
+        </table>
+
+        <h4 style="margin-bottom: 0.5rem; color: var(--text-main); margin-top: 1.5rem;">Trigonometry</h4>
+        <table class="formula-table">
+            <thead>
+                <tr><th>$f(x)$</th><th>$f'(x)$</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>$\sin(x)$</td><td>$\cos(x)$</td></tr>
+                <tr><td>$\cos(x)$</td><td>$-\sin(x)$</td></tr>
+                <tr><td>$\tan(x)$</td><td>$\sec^2(x)$</td></tr>
+                <tr><td>$\cot(x)$</td><td>$-\csc^2(x)$</td></tr>
+                <tr><td>$\sec(x)$</td><td>$\sec(x)\tan(x)$</td></tr>
+                <tr><td>$\csc(x)$</td><td>$-\csc(x)\cot(x)$</td></tr>
+            </tbody>
+        </table>
+
+        <h4 style="margin-bottom: 0.5rem; color: var(--text-main); margin-top: 1.5rem;">Differentiation Rules</h4>
+        <table class="formula-table">
+            <tbody>
+                <tr><td><strong>Product Rule</strong></td><td>$(uv)' = u'v + uv'$</td></tr>
+                <tr><td><strong>Quotient Rule</strong></td><td>$\left(\frac{u}{v}\right)' = \frac{u'v - uv'}{v^2}$</td></tr>
+                <tr><td><strong>Chain Rule</strong></td><td>$[f(g(x))]' = f'(g(x)) \cdot g'(x)$</td></tr>
             </tbody>
         </table>
     </div>

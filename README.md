@@ -2,38 +2,48 @@
 
 An advanced, single-file web application for calculating, visualizing, and exploring the Nth derivative of mathematical functions. Designed for educational use in college laboratories.
 
-## Features
+## 🚀 Key Features
 
-- **Symbolic Differentiation:** Uses `math.js` to accurately calculate Nth-order derivatives of complex functions.
-- **Real-Time Graphing:** Visualizes the original function ($f(x)$) and its derivatives ($f'(x)$, $f''(x)$, etc.) simultaneously using `Plotly.js`.
-- **LaTeX Rendering:** Displays clean, textbook-quality mathematical equations using `MathJax`.
-- **Numerical Evaluation:** Evaluate the final derivative at a specific point ($x=a$).
-- **Web Worker Engine:** Performs heavy calculations in a background thread, keeping the UI responsive.
-- **Formula Reference:** Built-in modal with standard derivatives and rules (Product, Quotient, Chain).
-- **Single-File Deployment:** Entire application contained in `simulation.html` for easy distribution and offline use.
+- **Symbolic Differentiation:** Powered by `math.js`, providing accurate Nth-order derivatives for polynomial, trigonometric, exponential, and logarithmic functions.
+- **Dynamic Visualization:** Interactive graphing of the original function and all successive derivatives (up to the requested order) using `Plotly.js`.
+- **LaTeX Mathematical Output:** Renders textbook-quality equations via `MathJax`, with custom formatting to ensure clean, readable results (removing artifacts like `\cdot`).
+- **Numerical Evaluation:** Instantly evaluate the Nth derivative at any given value of $x$.
+- **Non-Blocking Performance:** Leverages **Web Workers** to handle complex symbolic computations and point generation in the background, ensuring a smooth, lag-free UI.
+- **Comprehensive Formula Reference:** An expanded, built-in reference modal covering:
+    - Basic Rules (Power, Constant, etc.)
+    - Trigonometric Derivatives
+    - Exponential and Logarithmic Rules
+    - Product, Quotient, and Chain Rules
+- **Modern Responsive Design:** A clean, professional interface built with CSS variables, optimized for both desktop and mobile viewing.
 
-## Technologies Used
+## 🛠️ Technologies Used
 
-- **HTML5 & CSS3:** Modern, responsive UI.
-- **JavaScript (ES6+):** Core logic and Web Worker implementation.
-- **[Math.js](https://mathjs.org/):** Symbolic differentiation engine.
-- **[Plotly.js](https://plotly.com/javascript/):** Interactive graphing library.
-- **[MathJax](https://www.mathjax.org/):** LaTeX display engine.
+- **Frontend:** HTML5, CSS3 (Modern Flexbox/Grid), JavaScript (ES6+).
+- **Mathematics Engine:** [Math.js](https://mathjs.org/) for symbolic parsing and calculation.
+- **Graphing Library:** [Plotly.js](https://plotly.com/javascript/) for interactive SVG/Canvas plots.
+- **Math Rendering:** [MathJax v3](https://www.mathjax.org/) for LaTeX display.
 
-## How to Use
+## 📖 How to Use
 
-1. Open `simulation.html` in any modern web browser (Chrome, Edge, Firefox, Safari).
+1. **Launch:** Open `simulation.html` in any modern web browser.
 2. **Input:**
-   - Enter your function in the **Function f(x)** field (e.g., `sin(x) * x^2`).
-   - Enter the desired **Order (n)** (e.g., `3` for the 3rd derivative).
-   - (Optional) Enter a value for **x** to evaluate the result numerically.
-3. **Calculate:** Click the **Calculate** button.
-4. **Analyze:**
-   - View step-by-step symbolic results in the output section.
-   - Interact with the graph to zoom, pan, and inspect values.
-5. **Tools:** Use the **Formulas** button for help or **Quick Examples** to load preset functions.
+   - **Function f(x):** Enter your expression (e.g., `2*x^3 + sin(x)`). Use `*` for multiplication.
+   - **Order (n):** Specify how many times you wish to differentiate.
+   - **Evaluate at x:** (Optional) Provide a value to calculate the final numerical result.
+3. **Calculate:** Hit the **Calculate** button to start the engine.
+4. **Interact:**
+   - Scroll through the **Order-by-Order** symbolic steps.
+   - Use the **Graph** to toggle specific derivatives on/off or zoom into points of interest.
+   - Use **Copy** on the final answer to save it to your clipboard.
+5. **Learn:** Click the **Formulas** button at any time to verify differentiation rules.
 
-## Project Structure
+## 📝 Syntax Tips
 
-- `simulation.html`: The complete application (UI, styles, logic, and graphing).
-- `README.md`: This documentation.
+The simulator uses `math.js` syntax:
+- Powers: `x^2`
+- Multiplication: `2*x` or `x*y`
+- Functions: `sin(x)`, `cos(x)`, `log(x)`, `exp(x)`, `sqrt(x)`
+- Constants: `e`, `pi`
+
+---
+*Created for the Successive Differentiation Project - 2025*
