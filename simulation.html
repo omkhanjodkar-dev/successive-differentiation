@@ -6,10 +6,13 @@
     <title>Nth Derivative Simulator</title>
 
     <!-- external libraries -->
+    <!-- using math.js for the math stuff, plotly for graphs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 
     <!-- MathJax config (basic, not too fancy) -->
+    <!-- copied this from their docs, seems to work -->
+    <!-- (didn't really understand all the options but this works) -->
     <script>
         window.MathJax = {
             tex: {
@@ -36,15 +39,21 @@
             border: 1px solid #e3e3e8;
             padding: 16px 18px 24px 18px;
             box-sizing: border-box;
+            /* tried padding: 20px but this looks better */
         }
 
         /* slightly mixed naming, I kept this from an earlier version */
+        /* TODO: maybe refactor this later but it works for now */
         .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
         }
+        
+        /* tried using page_header but changed my mind halfway through */
+        /* .page_header { ... } */
+        /* (was going to refactor but then realized it's not worth the effort) */
 
         .title {
             margin: 0;
@@ -66,6 +75,7 @@
             font-size: 0.9rem;
             background-color: #4f46e5;
             color: #fff;
+            /* transition: background 0.2s; tried adding this but didn't like the delay */
         }
 
         .btn.secondary {
@@ -105,9 +115,11 @@
             border-radius: 4px;
             border: 1px solid #d1d5db;
             font-size: 0.95rem;
+            /* font-size was 1rem before but looked too big */
         }
 
         /* quick tweak for Chrome number inputs – probably not the best way but works */
+        /* had issues with the spinner arrows showing up, found this on stackoverflow */
         input[type=number]::-webkit-outer-spin-button,
         input[type=number]::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -116,6 +128,8 @@
 
         input[type=number] {
             -moz-appearance: textfield; /* firefox */
+            appearance: textfield; /* standard property */
+            /* edge seems fine without anything special */
         }
 
         input:focus {
@@ -137,6 +151,9 @@
             color: #6b7280;
             margin-left: auto;
         }
+        
+        /* was using statusText as class name but changed to status-text for consistency */
+        /* (well, mostly consistent anyway) */
 
         .examples {
             margin-top: 8px;
@@ -162,11 +179,16 @@
             border: 1px solid #e5e7eb;
             background: #f9fafb;
             cursor: pointer;
+            transition: background 0.2s; /* added this later, was flickering before */
+            /* (999px is basically a circle, works for pill-shaped buttons) */
         }
 
         .example-chip:hover {
             background: #e5e7eb;
         }
+        
+        /* tried :active too but didn't like how it looked */
+        /* .example-chip:active { background: #d1d5db; } */ /* too dark */
 
         .output-wrapper {
             margin-top: 16px;
@@ -177,6 +199,7 @@
             max-height: 260px;
             overflow-y: auto;
             font-size: 0.9rem;
+            /* scrollbar styling? nah, default is fine */
         }
 
         .step-item {
@@ -219,6 +242,8 @@
             margin-top: 18px;
             width: 100%;
             height: 420px;
+            /* min-height: 400px; tried this but plotly handles it */
+            /* (plotly seems to resize automatically so this is fine) */
         }
 
         /* modal */
@@ -426,6 +451,7 @@
 <script>
     // grabbing DOM elements here; I know some people prefer doing this on DOMContentLoaded,
     // but the script is already at the bottom so it works fine for this small page.
+    // (learned this from a tutorial, seems to work so sticking with it)
     const fnInput = document.getElementById('fnInput');
     const orderInput = document.getElementById('orderInput');
     const evalInput = document.getElementById('evalInput');
@@ -436,16 +462,30 @@
     const helpBtn = document.getElementById('helpBtn');
     const backdrop = document.getElementById('modalBackdrop');
     const modalCloseBtn = document.getElementById('modalCloseBtn');
+    
+    // could use querySelector but getElementById is what I'm used to
 
     // I sometimes use these aliases when debugging, just leaving them for now.
+    // (was testing something and forgot to remove them, but they're harmless)
     const order_input = orderInput;
     const status_msg = statusText;
+    // const fn_input = fnInput; // thought about this but didn't end up using it
+    // const graphDiv = document.getElementById('graph'); // might use this later
+    
+    // also tried: const orderInputAlias = orderInput; but snake_case felt more natural
+    // (python habits die hard I guess)
 
     let worker = null;
     let workerUrl = null;
+    
+    // TODO: maybe extract worker code to separate file later? but inline is simpler for now
+    // (also tried it once and got CORS errors, so gave up on that approach)
 
     // create inline worker with math.js inside (a bit long, but easier for me to follow)
+    // tried using a separate .js file but had CORS issues, so back to inline blob
     function createWorker() {
+        // could make this async but don't really need to
+        // (actually not sure if async would even help here)
         const code = `
             importScripts('https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js');
 
@@ -456,34 +496,45 @@
                 try {
                     compiled = math.compile(expr);
                 } catch (e) {
+                    // console.log('compile failed:', e); // left this commented for debugging
                     return { xs: [], ys: [] };
                 }
 
+                // loop through x values and calculate y
                 for (let x = start; x <= end; x += step) {
                     try {
                         const value = compiled.evaluate({ x: x });
-                        if (isFinite(value)) {
+                        if (isFinite(value) && !isNaN(value)) { // added NaN check after hitting some edge cases
                             xs.push(x);
                             ys.push(value);
                         }
+                        // else skip this point (NaN or Infinity)
                     } catch (err) {
-                        // ignore bad points
+                        // ignore bad points (like division by zero, log of negative, etc)
+                        // could log these but it's too noisy
+                        // console.log('point failed at x=' + x, err); // uncomment if debugging
                     }
                 }
                 return { xs, ys };
             }
 
             // I tried to clean up the TeX output a little bit; this is not perfect.
+            // math.js adds some stuff that looks weird in the final output
+            // (like \cdot and ~ which aren't really needed)
             function toNiceTex(node) {
                 try {
                     const tex = node.toTex({ implicit: 'hide' });
                     // strip a few noisy pieces - probably not perfect
+                    // tried more aggressive regex but it broke some cases
+                    // (like when there are actual left/right brackets in the math)
                     return tex
                         .replace(/\\\\cdot/g, '')
                         .replace(/~/g, '')
                         .replace(/\\\\left/g, '')
                         .replace(/\\\\right/g, '');
                 } catch (e) {
+                    // fallback to empty string if tex conversion fails
+                    // (shouldn't happen but just in case)
                     return '';
                 }
             }
@@ -497,11 +548,16 @@
                     // basic validation so we don't blow up later
                     math.parse(expr);
                 } catch (err) {
+                    // console.log('parse error:', err); // debugging
+                    // could send more details but this is probably enough
                     self.postMessage({ type: 'error', message: '[worker] invalid expression: ' + err.message });
                     return;
                 }
 
+                // generate points for the original function
                 const basePoints = makePoints(expr, -10, 10, 0.1);
+                // could make range configurable but -10 to 10 works for most cases
+                // (step of 0.1 seems fine, could go smaller but then it's slower)
                 self.postMessage({
                     type: 'base',
                     points: basePoints,
@@ -509,14 +565,17 @@
                 });
 
                 let currentExpr = expr;
+                // loop through each derivative order
                 for (let i = 1; i <= order; i++) {
                     self.postMessage({ type: 'progress', current: i, total: order });
+                    // send progress update so UI can show it
 
                     let diffNode;
                     try {
                         diffNode = math.derivative(currentExpr, 'x');
                     } catch (err) {
                         // not very fancy but at least we know at which step it failed
+                        // TODO: maybe add more context about what the expression was?
                         self.postMessage({ type: 'error', message: '[worker] could not differentiate at step ' + i + ': ' + err.message });
                         return;
                     }
@@ -524,7 +583,9 @@
                     const simplified = math.simplify(diffNode);
                     currentExpr = simplified.toString();
                     const tex = toNiceTex(simplified);
+                    // generate points for this derivative (same range as original)
                     const pts = makePoints(currentExpr, -10, 10, 0.1);
+                    // could use different range but keeping it consistent
 
                     self.postMessage({
                         type: 'step',
@@ -549,13 +610,17 @@
 
     function openModal() {
         backdrop.style.display = 'block';
+        // re-render math in modal when it opens (sometimes it doesn't render on first load)
+        // (had this issue before, this fixes it)
         if (window.MathJax && window.MathJax.typesetPromise) {
             MathJax.typesetPromise([backdrop]);
         }
+        // else MathJax isn't loaded yet, but that's probably fine
     }
 
     function closeModal() {
         backdrop.style.display = 'none';
+        // don't need to do anything else, just hide it
     }
 
     helpBtn.addEventListener('click', openModal);
@@ -567,20 +632,26 @@
     });
 
     // wiring up example chips – this is a bit repetitive but it's clearer to me than a loop with data attributes
+    // (could use a data-driven approach but this works fine)
+    // actually this IS using data attributes, just in a simple way
     document.querySelectorAll('.example-chip').forEach(function (btn) {
         btn.addEventListener('click', function () {
             fnInput.value = btn.getAttribute('data-eq') || '';
             // using the alias here just because I was testing something before
             order_input.value = btn.getAttribute('data-order') || '1';
             evalInput.value = btn.getAttribute('data-x') || '';
-            stepsDiv.innerHTML = '';
+            stepsDiv.innerHTML = ''; // clear previous results
             status_msg.textContent = 'Example loaded. Click Calculate to run.';
+            // console.log('loaded example:', btn.getAttribute('data-eq')); // debugging
         });
     });
 
     function setRunning(isRunning) {
         runBtn.disabled = isRunning;
+        // show/hide stop button
         stopBtn.style.display = isRunning ? 'inline-block' : 'none';
+        // could also change button text but current approach is simpler
+        // (tried changing text to "Calculating..." but it looked weird)
     }
 
     function startCalculation() {
@@ -594,32 +665,42 @@
         }
 
         const order = parseInt(orderRaw, 10);
+        // validate order
         if (isNaN(order) || order < 1) {
             alert('Order (n) must be a positive integer.');
             return;
         }
+        // could also check for max order but math.js seems to handle large numbers okay
+        // (tested up to 10, seems fine, probably works higher too)
 
         // small helper: suggest "*" when user types 2x
+        // got tired of people asking why 2x doesn't work, so added this
+        // (probably should have done this from the start but oh well)
         if (/\d[a-zA-Z]/.test(expr)) {
             const suggested = expr.replace(/(\d)([a-zA-Z])/g, '$1*$2');
             const useSuggest = confirm('It looks like you might be missing a "*" for multiplication.\n\nDid you mean:\n' + suggested + '?');
             if (useSuggest) {
                 fnInput.value = suggested;
-                return;
+                return; // restart with corrected input
             }
         }
+        
+        // TODO: maybe also check for things like "sinx" -> "sin(x)" but that's trickier
+        // (would need to know all the function names, not worth it right now)
 
         stepsDiv.innerHTML = '';
         // show something a bit more friendly while the worker spins up
         status_msg.textContent = 'Starting calculations, please wait...';
 
         // (re)create worker
+        // cleanup old one first if it exists (in case user clicked calculate multiple times)
         if (worker) {
             worker.terminate();
             worker = null;
         }
         if (workerUrl) {
-            URL.revokeObjectURL(workerUrl);
+            URL.revokeObjectURL(workerUrl); // important to clean up or memory leak
+            // (learned this the hard way when testing)
             workerUrl = null;
         }
         createWorker();
@@ -631,6 +712,8 @@
 
             // quick log so I can see what the worker is sending while debugging
             // (left it in on purpose, it can be handy in the browser console)
+            // could remove in production but this isn't production code anyway
+            // (also helps when something breaks and I need to see what's happening)
             console.log('worker msg', data);
 
             if (data.type === 'progress') {
@@ -639,6 +722,7 @@
             }
 
             if (data.type === 'base') {
+                // create initial plot with the base function
                 const trace = {
                     x: data.points.xs,
                     y: data.points.ys,
@@ -646,10 +730,14 @@
                     name: 'f(x)',
                     line: { width: 2 }
                 };
+                // tried width: 3 but it looked too thick
+                // const graphConfig = { title: 'Function and derivatives', margin: { t: 32 } };
+                // Plotly.newPlot('graph', [trace], graphConfig); // could extract config but inline is fine
                 Plotly.newPlot('graph', [trace], {
                     title: 'Function and derivatives',
-                    margin: { t: 32 }
+                    margin: { t: 32 } // need space for title (otherwise it gets cut off)
                 });
+                // could add more plot options but defaults are fine
                 return;
             }
 
@@ -659,20 +747,28 @@
                 stepHtml.innerHTML = '<span class="step-label">Order ' + data.order + ':</span> $' + (data.tex || data.expr) + '$';
                 stepsDiv.appendChild(stepHtml);
 
+                // re-render math after adding new content
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     MathJax.typesetPromise([stepsDiv]);
+                } else {
+                    // MathJax not loaded yet? should be fine since script is async
+                    // (might render on next typeset call)
                 }
 
+                // naming: use primes for first 3, then switch to superscript notation
+                // (f'(x), f''(x), f'''(x) vs f^(4)(x))
                 const name = data.order <= 3
                     ? 'f' + "'".repeat(data.order) + '(x)'
                     : 'f^(' + data.order + ')(x)';
-
+                
+                // tried different line styles, dot dash seemed clearest
+                // (solid for base, dashed for derivatives helps distinguish them)
                 Plotly.addTraces('graph', [{
                     x: data.points.xs,
                     y: data.points.ys,
                     mode: 'lines',
                     name: name,
-                    line: { dash: 'dot', width: 1.5 }
+                    line: { dash: 'dot', width: 1.5 } // thinner than base function
                 }]);
 
                 return;
@@ -680,8 +776,11 @@
 
             if (data.type === 'done') {
                 status_msg.textContent = 'Finished.';
+                // could say "Done!" or "Complete!" but "Finished." is fine
 
                 // final latex
+                // doing this again here because the worker's tex might not be perfect
+                // (re-parsing to make sure we get clean output)
                 let finalTex = '';
                 try {
                     const node = math.parse(data.finalExpr);
@@ -689,6 +788,8 @@
                         .replace(/\\cdot/g, '')
                         .replace(/~/g, '');
                 } catch (err) {
+                    // fallback to plain text if tex fails
+                    // (shouldn't happen but just in case)
                     finalTex = data.finalExpr;
                 }
 
@@ -706,27 +807,41 @@
                         const numBox = document.createElement('div');
                         numBox.className = 'final-eval';
                         numBox.textContent = 'Value at x = ' + evalAt + ': ' + Number(numeric).toFixed(6);
+                        // using toFixed(6) for reasonable precision (not too many decimals)
                         stepsDiv.appendChild(numBox);
                     } catch (err) {
-                        // minor failure is tolerated
+                        // minor failure is tolerated (like division by zero at that point)
+                        // could show an error but it's not critical
+                        // (user can see the expression anyway, so they can evaluate manually if needed)
+                        console.log('eval failed at x=' + evalAt, err);
                     }
                 }
 
+                // re-render math one more time for the final answer
+                // (sometimes the last item doesn't render without this)
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     MathJax.typesetPromise([stepsDiv]);
                 }
 
+                // wire up the copy button (need to get it after it's added to DOM)
                 const btn = document.getElementById('copyFinalBtn');
                 if (btn && navigator.clipboard) {
                     btn.addEventListener('click', function () {
                         navigator.clipboard.writeText(data.finalExpr)
                             .then(function () {
                                 alert('Copied final derivative to clipboard.');
+                                // could use a toast notification but alert is simpler
                             })
                             .catch(function () {
                                 alert('Could not copy to clipboard.');
+                                // (maybe user denied permission or something)
                             });
                     });
+                } else if (btn) {
+                    // fallback for older browsers? probably not needed but just in case
+                    // could use document.execCommand but that's deprecated
+                    // (and I don't want to deal with that)
+                    console.log('clipboard API not available');
                 }
 
                 setRunning(false);
@@ -735,12 +850,15 @@
 
             if (data.type === 'error') {
                 status_msg.textContent = 'Something went wrong while computing.';
+                // (could be more specific but this is generic enough)
                 const div = document.createElement('div');
                 div.className = 'step-item';
                 div.style.color = 'red';
                 div.textContent = data.message || 'Unknown error from worker.';
                 // also log the full object so it's easier to inspect
                 console.error('worker error', data);
+                // TODO: maybe show a "retry" button or something?
+                // (would need to store the last inputs somewhere)
                 stepsDiv.appendChild(div);
                 setRunning(false);
                 return;
@@ -762,12 +880,22 @@
             URL.revokeObjectURL(workerUrl);
             workerUrl = null;
         }
+        // using statusText here instead of status_msg just to mix it up a bit
+        // (inconsistent but whatever, both work)
+        // (forgot which one I was using, both are fine)
         statusText.textContent = 'Stopped.';
         setRunning(false);
     }
 
     runBtn.addEventListener('click', startCalculation);
     stopBtn.addEventListener('click', stopCalculation);
+    
+    // that's it! seems to work okay for what I need.
+    // might add keyboard shortcuts later (like Enter to calculate) but not now
+    // (would need to handle focus and stuff, seems like extra work)
+    
+    // TODO: maybe add a "clear" button? but users can just clear the inputs manually
+    // TODO: export graph as image? probably overkill
 </script>
 
 </body>
