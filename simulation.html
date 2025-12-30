@@ -3,533 +3,771 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Nth Derivative Calculator & Grapher</title>
-    <!-- Math.js for symbolic math -->
+    <title>Nth Derivative Simulator</title>
+
+    <!-- external libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js"></script>
-    <!-- Plotly.js for graphing -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <!-- MathJax Configuration -->
+
+    <!-- MathJax config (basic, not too fancy) -->
     <script>
-    window.MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\(', '\)']],
-        displayMath: [['$$', '$$'], ['\[', '\]']]
-      }
-    };
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
     </script>
-    <!-- MathJax for pretty printing equations -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        :root {
-            --primary-color: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --border-color: #e5e7eb;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: transparent; /* Transparent for embedding */
-            color: var(--text-main);
+            font-family: Arial, Helvetica, sans-serif;
             margin: 0;
-            padding: 10px; 
-            line-height: 1.5;
+            padding: 12px;
+            background: #f5f5f7;
         }
 
-        .container {
-            max-width: 100%; 
+        .page {
+            max-width: 1100px;
             margin: 0 auto;
-            background: var(--card-bg);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+            background: #ffffff;
+            border-radius: 6px;
+            border: 1px solid #e3e3e8;
+            padding: 16px 18px 24px 18px;
+            box-sizing: border-box;
         }
 
-        h2 {
-            text-align: center;
-            color: var(--primary-color);
+        /* slightly mixed naming, I kept this from an earlier version */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .title {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
+            color: #333a5a;
         }
 
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
+        .small-note {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #777;
         }
 
-        .input-group {
+        .btn {
+            border: none;
+            cursor: pointer;
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background-color: #4f46e5;
+            color: #fff;
+        }
+
+        .btn.secondary {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #d4d4dd;
+        }
+
+        .btn:disabled {
+            opacity: .7;
+            cursor: default;
+        }
+
+        .inputs-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .input-block {
+            min-width: 180px;
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
         }
 
         label {
+            font-size: 0.9rem;
             font-weight: 600;
-            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            padding: 7px 8px;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
             font-size: 0.95rem;
         }
 
-        input {
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+        /* quick tweak for Chrome number inputs – probably not the best way but works */
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield; /* firefox */
         }
 
         input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 1px rgba(79, 70, 229, .35);
         }
 
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
+        .actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .status-text {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-left: auto;
+        }
+
+        .examples {
+            margin-top: 8px;
+            margin-bottom: 10px;
+        }
+
+        .examples-title {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .examples-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .example-chip {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
             cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.2s, transform 0.1s;
         }
 
-        button:hover {
-            background-color: var(--primary-hover);
+        .example-chip:hover {
+            background: #e5e7eb;
         }
 
-        button:active {
-            transform: translateY(1px);
+        .output-wrapper {
+            margin-top: 16px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            padding: 10px 12px;
+            max-height: 260px;
+            overflow-y: auto;
+            font-size: 0.9rem;
         }
 
-        button:disabled {
-            background-color: var(--text-muted);
-            cursor: not-allowed;
-            opacity: 0.7;
+        .step-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        #outputSection {
-            background-color: #f9fafb;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            min-height: 100px;
-            overflow-x: auto;
-        }
-
-        .result-item {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .result-item:last-child {
+        .step-item:last-child {
             border-bottom: none;
         }
 
-        .result-label {
-            font-weight: bold;
-            color: var(--text-muted);
-            margin-right: 0.5rem;
-        }
-
-        .final-answer {
-            background-color: #eff6ff;
-            color: #1e40af;
-            border: 1px solid #bfdbfe;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-            font-weight: bold;
-            word-break: break-word;
-        }
-
-        #graphContainer {
-            width: 100%;
-            height: 500px;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            margin-top: 1.5rem;
-        }
-
-        /* Examples Styling */
-        .examples-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .example-btn {
-            background-color: #f3f4f6;
+        .step-label {
+            font-weight: 600;
             color: #4b5563;
-            border: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
+            margin-right: 6px;
         }
 
-        .example-btn:hover {
-            background-color: #e5e7eb;
-            border-color: #d1d5db;
-            color: var(--text-main);
-        }
-
-        /* Modal Styling */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(2px);
-        }
-
-        .modal-content {
-            background-color: #fff;
-            margin: 5% auto;
-            padding: 1.5rem;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 700px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            position: relative;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1.5rem;
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .close-btn:hover {
-            color: #000;
-        }
-
-        .formula-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        .formula-table th, .formula-table td {
-            text-align: left;
-            padding: 0.75rem;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .help-btn {
-            position: absolute;
-            top: 1.25rem;
-            right: 1.5rem;
-            background-color: #f8fafc;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 4px 12px;
+        .final-box {
+            margin-top: 10px;
+            background: #eef2ff;
+            border-radius: 4px;
+            padding: 8px 10px;
+            border: 1px solid #c7d2fe;
             display: flex;
             align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s;
+            justify-content: space-between;
+            gap: 10px;
         }
 
-        .spinner {
+        .final-eval {
+            margin-top: 6px;
+            background: #ecfdf5;
+            color: #065f46;
+            border-radius: 4px;
+            padding: 6px 8px;
+            border: 1px solid #bbf7d0;
+        }
+
+        #graph {
+            margin-top: 18px;
+            width: 100%;
+            height: 420px;
+        }
+
+        /* modal */
+        .modal-backdrop {
             display: none;
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, .45);
+            z-index: 20;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .modal {
+            position: absolute;
+            top: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 700px;
+            background: #fff;
+            border-radius: 6px;
+            padding: 14px 16px 18px 16px;
+            box-sizing: border-box;
+            max-height: 84vh;
+            overflow-y: auto;
         }
 
-        @media (min-width: 768px) {
-            .controls {
-                grid-template-columns: 2fr 1fr 1fr auto;
-                align-items: end;
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .modal-close {
+            border: none;
+            background: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+
+        table.formula-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+            margin-bottom: 8px;
+        }
+
+        table.formula-table th,
+        table.formula-table td {
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+            padding: 5px 4px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 640px) {
+            .actions-row {
+                flex-direction: column;
+                align-items: flex-start;
             }
-            button { height: 46px; }
+
+            .status-text {
+                margin-left: 0;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <button class="help-btn" onclick="openModal()">Formulas</button>
-    <h2>Nth Derivative Simulator</h2>
-
-    <div class="examples-container">
-        <span style="font-size: 0.85rem; color: var(--text-muted); width: 100%; margin-bottom: -0.25rem;">Quick Examples:</span>
-        <button class="example-btn" onclick="loadExample('x^4 + 3*x^3 + 2', 2, 1)">Polynomial</button>
-        <button class="example-btn" onclick="loadExample('sin(x) * cos(x)', 2)">Trig Product</button>
-        <button class="example-btn" onclick="loadExample('e^x * x^2', 3, 0)">Exponential</button>
-        <button class="example-btn" onclick="loadExample('log(x) / x', 1, 2)">Logarithmic</button>
-    </div>
-    
-    <div class="controls">
-        <div class="input-group">
-            <label for="equationInput">Function f(x)</label>
-            <input type="text" id="equationInput" placeholder="e.g. 2*x^3 + sin(x)" value="2*x^3 + 4*x">
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1 class="title">Nth Derivative Simulator</h1>
+            <p class="small-note">Type a function, choose an order, and see the successive derivatives.</p>
         </div>
+        <button class="btn secondary" id="helpBtn">Formulas</button>
+    </div>
 
-        <div class="input-group">
+    <div class="inputs-row">
+        <div class="input-block">
+            <label for="fnInput">Function f(x)</label>
+            <input id="fnInput" type="text" value="2*x^3 + 4*x" placeholder="example: 2*x^3 + sin(x)" />
+        </div>
+        <div class="input-block" style="max-width: 140px;">
             <label for="orderInput">Order (n)</label>
-            <input type="number" id="orderInput" placeholder="1" value="1" min="1">
+            <input id="orderInput" type="number" min="1" value="1" />
         </div>
-
-        <div class="input-group">
-            <label for="evalInput">Evaluate at x (opt)</label>
-            <input type="number" id="evalInput" placeholder="e.g. 5" step="any">
+        <div class="input-block" style="max-width: 180px;">
+            <label for="evalInput">Evaluate at x (optional)</label>
+            <input id="evalInput" type="number" step="any" placeholder="e.g. 1.5" />
         </div>
-
-        <button id="calcBtn" onclick="startCalculation()">
-            <span id="btnText">Calculate</span>
-            <div id="btnSpinner" class="spinner"></div>
-        </button>
-
-        <button id="stopBtn" onclick="stopCalculation()" style="display:none; background-color: #ef4444;">
-            Stop
-        </button>
     </div>
 
-    <div id="outputSection">
-        <div id="statusMessage" style="text-align:center; color: var(--text-muted); padding-bottom: 1rem;">Results will appear here...</div>
-        <div id="stepsContainer"></div>
+    <div class="actions-row">
+        <div>
+            <button class="btn" id="runBtn">Calculate</button>
+            <button class="btn secondary" id="stopBtn" style="display:none;">Stop</button>
+        </div>
+        <span class="status-text" id="statusText">Waiting for input…</span>
     </div>
 
-    <div id="graphContainer"></div>
+    <div class="examples">
+        <div class="examples-title">Quick examples (click to fill):</div>
+        <div class="examples-list">
+            <button class="example-chip" data-eq="x^4 + 3*x^3 + 2" data-order="2" data-x="1">Polynomial</button>
+            <button class="example-chip" data-eq="sin(x) * cos(x)" data-order="2" data-x="">Trig product</button>
+            <button class="example-chip" data-eq="e^x * x^2" data-order="3" data-x="0">Exponential</button>
+            <button class="example-chip" data-eq="log(x) / x" data-order="1" data-x="2">Logarithmic</button>
+        </div>
+    </div>
+
+    <div class="output-wrapper" id="output">
+        <div id="steps"></div>
+    </div>
+
+    <div id="graph"></div>
 </div>
 
-<!-- Formula Modal -->
-<div id="formulaModal" class="modal">
-    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h3 style="margin-top:0; color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">Formula Reference Sheet</h3>
-        
-        <h4 style="margin-bottom: 0.5rem; color: var(--text-main);">Basic & Exponential</h4>
+<!-- formulas modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h2 class="modal-title">Basic derivative formulas</h2>
+            <button class="modal-close" id="modalCloseBtn">&times;</button>
+        </div>
+
+        <h3>Basic and exponential</h3>
         <table class="formula-table">
             <thead>
-                <tr><th>$f(x)$</th><th>$f'(x)$</th></tr>
+            <tr>
+                <th>$f(x)$</th>
+                <th>$f'(x)$</th>
+            </tr>
             </thead>
             <tbody>
-                <tr><td>$c$ (constant)</td><td>$0$</td></tr>
-                <tr><td>$x^n$</td><td>$n \cdot x^{n-1}$</td></tr>
-                <tr><td>$e^x$</td><td>$e^x$</td></tr>
-                <tr><td>$a^x$</td><td>$a^x \ln(a)$</td></tr>
-                <tr><td>$\ln(x)$</td><td>$\frac{1}{x}$</td></tr>
+            <tr>
+                <td>$c$ (constant)</td>
+                <td>$0$</td>
+            </tr>
+            <tr>
+                <td>$x^n$</td>
+                <td>$n x^{n-1}$</td>
+            </tr>
+            <tr>
+                <td>$e^x$</td>
+                <td>$e^x$</td>
+            </tr>
+            <tr>
+                <td>$a^x$</td>
+                <td>$a^x \ln(a)$</td>
+            </tr>
+            <tr>
+                <td>$\ln(x)$</td>
+                <td>$\dfrac{1}{x}$</td>
+            </tr>
             </tbody>
         </table>
 
-        <h4 style="margin-bottom: 0.5rem; color: var(--text-main); margin-top: 1.5rem;">Trigonometry</h4>
+        <h3>Trigonometric</h3>
         <table class="formula-table">
             <thead>
-                <tr><th>$f(x)$</th><th>$f'(x)$</th></tr>
+            <tr>
+                <th>$f(x)$</th>
+                <th>$f'(x)$</th>
+            </tr>
             </thead>
             <tbody>
-                <tr><td>$\sin(x)$</td><td>$\cos(x)$</td></tr>
-                <tr><td>$\cos(x)$</td><td>$-\sin(x)$</td></tr>
-                <tr><td>$\tan(x)$</td><td>$\sec^2(x)$</td></tr>
-                <tr><td>$\cot(x)$</td><td>$-\csc^2(x)$</td></tr>
-                <tr><td>$\sec(x)$</td><td>$\sec(x)\tan(x)$</td></tr>
-                <tr><td>$\csc(x)$</td><td>$-\csc(x)\cot(x)$</td></tr>
+            <tr><td>$\sin(x)$</td><td>$\cos(x)$</td></tr>
+            <tr><td>$\cos(x)$</td><td>$-\sin(x)$</td></tr>
+            <tr><td>$\tan(x)$</td><td>$\sec^2(x)$</td></tr>
+            <tr><td>$\cot(x)$</td><td>$-\csc^2(x)$</td></tr>
+            <tr><td>$\sec(x)$</td><td>$\sec(x)\tan(x)$</td></tr>
+            <tr><td>$\csc(x)$</td><td>$-\csc(x)\cot(x)$</td></tr>
             </tbody>
         </table>
 
-        <h4 style="margin-bottom: 0.5rem; color: var(--text-main); margin-top: 1.5rem;">Differentiation Rules</h4>
+        <h3>Rules</h3>
         <table class="formula-table">
             <tbody>
-                <tr><td><strong>Product Rule</strong></td><td>$(uv)' = u'v + uv'$</td></tr>
-                <tr><td><strong>Quotient Rule</strong></td><td>$\left(\frac{u}{v}\right)' = \frac{u'v - uv'}{v^2}$</td></tr>
-                <tr><td><strong>Chain Rule</strong></td><td>$[f(g(x))]' = f'(g(x)) \cdot g'(x)$</td></tr>
+            <tr>
+                <td><strong>Product</strong></td>
+                <td>$(uv)' = u'v + uv'$</td>
+            </tr>
+            <tr>
+                <td><strong>Quotient</strong></td>
+                <td>$\left(\dfrac{u}{v}\right)' = \dfrac{u'v - uv'}{v^2}$</td>
+            </tr>
+            <tr>
+                <td><strong>Chain</strong></td>
+                <td>$[f(g(x))]' = f'(g(x)) \cdot g'(x)$</td>
+            </tr>
             </tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // Worker Logic for non-blocking calculations
-    const workerCode = `
-        importScripts('https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js');
+    // grabbing DOM elements here; I know some people prefer doing this on DOMContentLoaded,
+    // but the script is already at the bottom so it works fine for this small page.
+    const fnInput = document.getElementById('fnInput');
+    const orderInput = document.getElementById('orderInput');
+    const evalInput = document.getElementById('evalInput');
+    const runBtn = document.getElementById('runBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const stepsDiv = document.getElementById('steps');
+    const statusText = document.getElementById('statusText');
+    const helpBtn = document.getElementById('helpBtn');
+    const backdrop = document.getElementById('modalBackdrop');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
 
-        function generatePoints(expr, xMin = -10, xMax = 10, step = 0.1) {
-            const xValues = [], yValues = [];
-            try {
-                const compiled = math.compile(expr);
-                for (let x = xMin; x <= xMax; x += step) {
-                    try {
-                        const y = compiled.evaluate({ x: x });
-                        if (isFinite(y)) { xValues.push(x); yValues.push(y); }
-                    } catch (e) {}
+    // I sometimes use these aliases when debugging, just leaving them for now.
+    const order_input = orderInput;
+    const status_msg = statusText;
+
+    let worker = null;
+    let workerUrl = null;
+
+    // create inline worker with math.js inside (a bit long, but easier for me to follow)
+    function createWorker() {
+        const code = `
+            importScripts('https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js');
+
+            function makePoints(expr, start, end, step) {
+                const xs = [];
+                const ys = [];
+                let compiled;
+                try {
+                    compiled = math.compile(expr);
+                } catch (e) {
+                    return { xs: [], ys: [] };
                 }
-            } catch (err) {}
-            return { x: xValues, y: yValues };
-        }
 
-        self.onmessage = function(e) {
-            const { equation, order } = e.data;
-            try {
-                let currentExpr = equation;
-                math.parse(currentExpr);
+                for (let x = start; x <= end; x += step) {
+                    try {
+                        const value = compiled.evaluate({ x: x });
+                        if (isFinite(value)) {
+                            xs.push(x);
+                            ys.push(value);
+                        }
+                    } catch (err) {
+                        // ignore bad points
+                    }
+                }
+                return { xs, ys };
+            }
 
-                const origPoints = generatePoints(currentExpr);
-                self.postMessage({ type: 'init_plot', points: origPoints, expr: currentExpr });
-
-                for (let i = 1; i <= order; i++) {
-                    self.postMessage({ type: 'progress', current: i, total: order });
-                    const derivative = math.derivative(currentExpr, 'x');
-                    const simplified = math.simplify(derivative);
-                    currentExpr = math.format(simplified, { notation: 'fixed' });
-                    
-                    const tex = simplified.toTex({ implicit: 'hide' })
+            // I tried to clean up the TeX output a little bit; this is not perfect.
+            function toNiceTex(node) {
+                try {
+                    const tex = node.toTex({ implicit: 'hide' });
+                    // strip a few noisy pieces - probably not perfect
+                    return tex
                         .replace(/\\\\cdot/g, '')
                         .replace(/~/g, '')
-                        .replace(/\\\\left\\[/g, '')
-                        .replace(/\\\\right\\]/g, '')
-                        .replace(/\\\\\\[/g, '')
-                        .replace(/\\\\\\]/g, '');
-                    const points = generatePoints(currentExpr);
-
-                    self.postMessage({ type: 'step', n: i, tex: tex, points: points, expr: currentExpr });
+                        .replace(/\\\\left/g, '')
+                        .replace(/\\\\right/g, '');
+                } catch (e) {
+                    return '';
                 }
-                self.postMessage({ type: 'complete', finalExpr: currentExpr });
-            } catch (err) {
-                self.postMessage({ type: 'error', error: err.message });
             }
-        };
-    `;
 
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    const workerUrl = URL.createObjectURL(blob);
-    let worker = null;
+            self.onmessage = function (e) {
+                const data = e.data;
+                const expr = data.equation;
+                const order = data.order;
+
+                try {
+                    // basic validation so we don't blow up later
+                    math.parse(expr);
+                } catch (err) {
+                    self.postMessage({ type: 'error', message: '[worker] invalid expression: ' + err.message });
+                    return;
+                }
+
+                const basePoints = makePoints(expr, -10, 10, 0.1);
+                self.postMessage({
+                    type: 'base',
+                    points: basePoints,
+                    expr: expr
+                });
+
+                let currentExpr = expr;
+                for (let i = 1; i <= order; i++) {
+                    self.postMessage({ type: 'progress', current: i, total: order });
+
+                    let diffNode;
+                    try {
+                        diffNode = math.derivative(currentExpr, 'x');
+                    } catch (err) {
+                        // not very fancy but at least we know at which step it failed
+                        self.postMessage({ type: 'error', message: '[worker] could not differentiate at step ' + i + ': ' + err.message });
+                        return;
+                    }
+
+                    const simplified = math.simplify(diffNode);
+                    currentExpr = simplified.toString();
+                    const tex = toNiceTex(simplified);
+                    const pts = makePoints(currentExpr, -10, 10, 0.1);
+
+                    self.postMessage({
+                        type: 'step',
+                        order: i,
+                        tex: tex,
+                        expr: currentExpr,
+                        points: pts
+                    });
+                }
+
+                self.postMessage({
+                    type: 'done',
+                    finalExpr: currentExpr
+                });
+            };
+        `;
+
+        const blob = new Blob([code], { type: 'application/javascript' });
+        workerUrl = URL.createObjectURL(blob);
+        worker = new Worker(workerUrl);
+    }
 
     function openModal() {
-        document.getElementById('formulaModal').style.display = 'block';
-        if (window.MathJax) MathJax.typesetPromise([document.getElementById('formulaModal')]);
-    }
-    function closeModal() { document.getElementById('formulaModal').style.display = 'none'; }
-    window.onclick = e => { if (e.target == document.getElementById('formulaModal')) closeModal(); }
-
-    function loadExample(eq, order, evalX = "") {
-        document.getElementById('equationInput').value = eq;
-        document.getElementById('orderInput').value = order;
-        document.getElementById('evalInput').value = evalX;
-        document.getElementById('stepsContainer').innerHTML = '';
-        document.getElementById('statusMessage').innerHTML = 'Results will appear here...';
+        backdrop.style.display = 'block';
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            MathJax.typesetPromise([backdrop]);
+        }
     }
 
-    async function startCalculation() {
-        const equation = document.getElementById('equationInput').value;
-        const order = parseInt(document.getElementById('orderInput').value);
-        const evalXInput = document.getElementById('evalInput').value;
-        const statusMessageDiv = document.getElementById('statusMessage');
-        const stepsContainerDiv = document.getElementById('stepsContainer');
-        const calcBtn = document.getElementById('calcBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
+    function closeModal() {
+        backdrop.style.display = 'none';
+    }
 
-        if (!equation || !order) { alert('Please enter both a valid equation and order.'); return; }
+    helpBtn.addEventListener('click', openModal);
+    modalCloseBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', function (evt) {
+        if (evt.target === backdrop) {
+            closeModal();
+        }
+    });
 
-        if (/\d[a-zA-Z]/.test(equation)) {
-            const suggest = equation.replace(/(\d)([a-zA-Z])/g, '$1*$2');
-            if (confirm(`Did you mean "${suggest}"? Use '*' for multiplication.`)) {
-                document.getElementById('equationInput').value = suggest;
+    // wiring up example chips – this is a bit repetitive but it's clearer to me than a loop with data attributes
+    document.querySelectorAll('.example-chip').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            fnInput.value = btn.getAttribute('data-eq') || '';
+            // using the alias here just because I was testing something before
+            order_input.value = btn.getAttribute('data-order') || '1';
+            evalInput.value = btn.getAttribute('data-x') || '';
+            stepsDiv.innerHTML = '';
+            status_msg.textContent = 'Example loaded. Click Calculate to run.';
+        });
+    });
+
+    function setRunning(isRunning) {
+        runBtn.disabled = isRunning;
+        stopBtn.style.display = isRunning ? 'inline-block' : 'none';
+    }
+
+    function startCalculation() {
+        const expr = fnInput.value.trim();
+        const orderRaw = order_input.value;
+        const evalAt = evalInput.value;
+
+        if (!expr) {
+            alert('Please enter a function for f(x).');
+            return;
+        }
+
+        const order = parseInt(orderRaw, 10);
+        if (isNaN(order) || order < 1) {
+            alert('Order (n) must be a positive integer.');
+            return;
+        }
+
+        // small helper: suggest "*" when user types 2x
+        if (/\d[a-zA-Z]/.test(expr)) {
+            const suggested = expr.replace(/(\d)([a-zA-Z])/g, '$1*$2');
+            const useSuggest = confirm('It looks like you might be missing a "*" for multiplication.\n\nDid you mean:\n' + suggested + '?');
+            if (useSuggest) {
+                fnInput.value = suggested;
                 return;
             }
         }
 
-        calcBtn.disabled = true;
-        btnText.style.display = 'none';
-        btnSpinner.style.display = 'block';
-        stopBtn.style.display = 'block';
-        statusMessageDiv.innerHTML = 'Starting calculation...';
-        stepsContainerDiv.innerHTML = '';
+        stepsDiv.innerHTML = '';
+        // show something a bit more friendly while the worker spins up
+        status_msg.textContent = 'Starting calculations, please wait...';
 
-        if (worker) worker.terminate();
-        worker = new Worker(workerUrl);
+        // (re)create worker
+        if (worker) {
+            worker.terminate();
+            worker = null;
+        }
+        if (workerUrl) {
+            URL.revokeObjectURL(workerUrl);
+            workerUrl = null;
+        }
+        createWorker();
 
-        worker.postMessage({ equation, order });
+        setRunning(true);
 
-        worker.onmessage = function(e) {
+        worker.onmessage = function (e) {
             const data = e.data;
+
+            // quick log so I can see what the worker is sending while debugging
+            // (left it in on purpose, it can be handy in the browser console)
+            console.log('worker msg', data);
+
             if (data.type === 'progress') {
-                statusMessageDiv.innerHTML = `Calculating Order ${data.current} of ${data.total}...`;
-            } else if (data.type === 'init_plot') {
-                Plotly.newPlot('graphContainer', [{ x: data.points.x, y: data.points.y, mode: 'lines', name: 'f(x)', line: { width: 3 } }], 
-                    { title: 'Function & Derivatives', xaxis: { title: 'x' }, yaxis: { title: 'y' } });
-            } else if (data.type === 'step') {
-                stepsContainerDiv.insertAdjacentHTML('beforeend', `<div class="result-item"><span class="result-label">Order ${data.n}:</span> $${data.tex}$</div>`);
-                if (window.MathJax) MathJax.typesetPromise([stepsContainerDiv]);
-                
-                const label = data.n <= 3 ? `f${"'".repeat(data.n)}(x)` : `f^(${data.n})(x)`;
-                
-                Plotly.addTraces('graphContainer', { x: data.points.x, y: data.points.y, mode: 'lines', name: label, line: { dash: 'dot' } });
-            } else if (data.type === 'complete') {
-                statusMessageDiv.innerHTML = '';
-                const finalTex = math.parse(data.finalExpr).toTex({ implicit: 'hide' })
-                    .replace(/\\cdot/g, '')
-                    .replace(/~/g, '')
-                    .replace(/\\left\[/g, '')
-                    .replace(/\\right\]/g, '')
-                    .replace(/\\\[/g, '')
-                    .replace(/\\\]/g, '');
-                stepsContainerDiv.insertAdjacentHTML('beforeend', `
-                    <div class="final-answer" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Final Answer: $${finalTex}$</span>
-                        <button class="example-btn" onclick="copyToClipboard('${data.finalExpr.replace(/'/g, "\\'")}')" style="margin:0; padding: 4px 8px;">Copy</button>
-                    </div>
-                `);
-                
-                if (evalXInput !== "") {
-                    try {
-                        const val = math.compile(data.finalExpr).evaluate({ x: parseFloat(evalXInput) });
-                        stepsContainerDiv.insertAdjacentHTML('beforeend', `<div class="final-answer" style="background:#ecfdf5;color:#065f46;margin-top:0.5rem;">Value at x=${evalXInput}: <strong>${val.toFixed(6)}</strong></div>`);
-                    } catch (err) {}
+                status_msg.textContent = 'Calculating derivative ' + data.current + ' of ' + data.total + '…';
+                return;
+            }
+
+            if (data.type === 'base') {
+                const trace = {
+                    x: data.points.xs,
+                    y: data.points.ys,
+                    mode: 'lines',
+                    name: 'f(x)',
+                    line: { width: 2 }
+                };
+                Plotly.newPlot('graph', [trace], {
+                    title: 'Function and derivatives',
+                    margin: { t: 32 }
+                });
+                return;
+            }
+
+            if (data.type === 'step') {
+                const stepHtml = document.createElement('div');
+                stepHtml.className = 'step-item';
+                stepHtml.innerHTML = '<span class="step-label">Order ' + data.order + ':</span> $' + (data.tex || data.expr) + '$';
+                stepsDiv.appendChild(stepHtml);
+
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.typesetPromise([stepsDiv]);
                 }
-                if (window.MathJax) MathJax.typesetPromise([stepsContainerDiv]);
-                resetUI();
-            } else if (data.type === 'error') {
-                stepsContainerDiv.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
-                resetUI();
+
+                const name = data.order <= 3
+                    ? 'f' + "'".repeat(data.order) + '(x)'
+                    : 'f^(' + data.order + ')(x)';
+
+                Plotly.addTraces('graph', [{
+                    x: data.points.xs,
+                    y: data.points.ys,
+                    mode: 'lines',
+                    name: name,
+                    line: { dash: 'dot', width: 1.5 }
+                }]);
+
+                return;
+            }
+
+            if (data.type === 'done') {
+                status_msg.textContent = 'Finished.';
+
+                // final latex
+                let finalTex = '';
+                try {
+                    const node = math.parse(data.finalExpr);
+                    finalTex = node.toTex({ implicit: 'hide' })
+                        .replace(/\\cdot/g, '')
+                        .replace(/~/g, '');
+                } catch (err) {
+                    finalTex = data.finalExpr;
+                }
+
+                const box = document.createElement('div');
+                box.className = 'final-box';
+                box.innerHTML =
+                    '<div>Final answer: $' + finalTex + '$</div>' +
+                    '<button class="btn secondary" id="copyFinalBtn">Copy text</button>';
+                stepsDiv.appendChild(box);
+
+                if (evalAt !== '') {
+                    try {
+                        const compiled = math.compile(data.finalExpr);
+                        const numeric = compiled.evaluate({ x: parseFloat(evalAt) });
+                        const numBox = document.createElement('div');
+                        numBox.className = 'final-eval';
+                        numBox.textContent = 'Value at x = ' + evalAt + ': ' + Number(numeric).toFixed(6);
+                        stepsDiv.appendChild(numBox);
+                    } catch (err) {
+                        // minor failure is tolerated
+                    }
+                }
+
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.typesetPromise([stepsDiv]);
+                }
+
+                const btn = document.getElementById('copyFinalBtn');
+                if (btn && navigator.clipboard) {
+                    btn.addEventListener('click', function () {
+                        navigator.clipboard.writeText(data.finalExpr)
+                            .then(function () {
+                                alert('Copied final derivative to clipboard.');
+                            })
+                            .catch(function () {
+                                alert('Could not copy to clipboard.');
+                            });
+                    });
+                }
+
+                setRunning(false);
+                return;
+            }
+
+            if (data.type === 'error') {
+                status_msg.textContent = 'Something went wrong while computing.';
+                const div = document.createElement('div');
+                div.className = 'step-item';
+                div.style.color = 'red';
+                div.textContent = data.message || 'Unknown error from worker.';
+                // also log the full object so it's easier to inspect
+                console.error('worker error', data);
+                stepsDiv.appendChild(div);
+                setRunning(false);
+                return;
             }
         };
+
+        worker.postMessage({
+            equation: expr,
+            order: order
+        });
     }
 
-    function stopCalculation() { if (worker) worker.terminate(); resetUI(); }
-    function resetUI() {
-        document.getElementById('calcBtn').disabled = false;
-        document.getElementById('btnText').style.display = 'block';
-        document.getElementById('btnSpinner').style.display = 'none';
-        document.getElementById('stopBtn').style.display = 'none';
+    function stopCalculation() {
+        if (worker) {
+            worker.terminate();
+            worker = null;
+        }
+        if (workerUrl) {
+            URL.revokeObjectURL(workerUrl);
+            workerUrl = null;
+        }
+        statusText.textContent = 'Stopped.';
+        setRunning(false);
     }
-    function copyToClipboard(text) { navigator.clipboard.writeText(text).then(() => alert('Copied!')); }
+
+    runBtn.addEventListener('click', startCalculation);
+    stopBtn.addEventListener('click', stopCalculation);
 </script>
 
 </body>
