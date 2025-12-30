@@ -2,7 +2,7 @@
 
 An advanced, single-file web application for calculating, visualizing, and exploring the Nth derivative of mathematical functions. Designed for educational use in college laboratories.
 
-## 🚀 Key Features
+## Key Features
 
 - **Symbolic Differentiation:** Powered by `math.js`, providing accurate Nth-order derivatives for polynomial, trigonometric, exponential, and logarithmic functions.
 - **Dynamic Visualization:** Interactive graphing of the original function and all successive derivatives (up to the requested order) using `Plotly.js`.
@@ -16,14 +16,14 @@ An advanced, single-file web application for calculating, visualizing, and explo
     - Product, Quotient, and Chain Rules
 - **Modern Responsive Design:** A clean, professional interface built with CSS variables, optimized for both desktop and mobile viewing.
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 - **Frontend:** HTML5, CSS3 (Modern Flexbox/Grid), JavaScript (ES6+).
 - **Mathematics Engine:** [Math.js](https://mathjs.org/) for symbolic parsing and calculation.
 - **Graphing Library:** [Plotly.js](https://plotly.com/javascript/) for interactive SVG/Canvas plots.
 - **Math Rendering:** [MathJax v3](https://www.mathjax.org/) for LaTeX display.
 
-## 📖 How to Use
+## How to Use
 
 1. **Launch:** Open `simulation.html` in any modern web browser.
 2. **Input:**
@@ -37,7 +37,7 @@ An advanced, single-file web application for calculating, visualizing, and explo
    - Use **Copy** on the final answer to save it to your clipboard.
 5. **Learn:** Click the **Formulas** button at any time to verify differentiation rules.
 
-## 📝 Syntax Tips
+## Syntax Tips
 
 The simulator uses `math.js` syntax:
 - Powers: `x^2`
